@@ -39,7 +39,7 @@ type SortingButtonProps = {
 function SortingButton({ children, onClick, isActive }: SortingButtonProps) {
   return (
     <button
-      onClick={() => onClick("recent")}
+      onClick={() => onClick()}
       className={`sorting__button sorting__button--recent ${
         isActive ? "sorting__button--active" : ""
       }`}
