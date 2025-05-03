@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { JobItem, JobItemExpanded } from "./type";
 import { BASE_API_URL } from "./constants";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { handleError } from "./utils";
 import { BookmarksContext } from "../context/BookmarksContextProvider";
 
@@ -37,27 +37,30 @@ export function useJobItem(id: number | null) {
   return { jobItem: data?.jobItem, isLoading: isInitialLoading } as const;
 }
 
-// export function useJobItems(searchText: string) {
-//   const [jobItems, setJobItems] = useState<JobItem[]>([]);
-//   const [isLoading, setIsLoading] = useState(false);
+// --------------------------------------------------
+export function useJobItems(ids: number[]) {
+  const results = useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ["job-item", id],
+      queryFn: () => fetchJobItem(id),
+      staleTime: 1000 * 60 * 60,
+      refetchOnWindowFocus: false,
+      retry: false,
+      enabled: Boolean(id),
+      onError: handleError,
+    })),
+  });
 
-//   useEffect(() => {
-//     if (!searchText) return;
+  const jobItems = results
+    .map((result) => result.data?.jobItem)
+    .filter((jobItem) => jobItem !== undefined);
+  const isLoading = results.some((result) => result.isLoading);
 
-//     const fetchData = async () => {
-//       setIsLoading(true);
-//       const response = await fetch(`${BASE_API_URL}?search=${searchText}`);
-//       const data = await response.json();
-//       setIsLoading(false);
-//       setJobItems(data.jobItems);
-//     };
-
-//     fetchData();
-//   }, [searchText]);
-
-//   return { jobItems, isLoading } as const;
-// }
-
+  return {
+    jobItems,
+    isLoading,
+  };
+}
 // --------------------------------------------------
 
 type JobItemsApiResponse = {
@@ -78,7 +81,7 @@ const fetchJobItems = async (
   return data;
 };
 
-export function useJobItems(searchText: string) {
+export function useSearchQuery(searchText: string) {
   const { data, isInitialLoading } = useQuery({
     queryKey: ["job-items", searchText],
     queryFn: () => fetchJobItems(searchText),
